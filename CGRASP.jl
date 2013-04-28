@@ -22,6 +22,10 @@ function BuildSet(r::Range1{Int})
     res
 end
 
+function RandomlySelectElement(is)
+    is[rand(1:length(is))]
+end
+
 
 ### Main algorithm routines
 
@@ -30,20 +34,21 @@ function ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
     g = zeros(Float64, n)
     z = zeros(Float64, n)
     while !isempty(S)
-        fmin = Inf
-        fmax = -Inf
+        gmin = Inf
+        gmax = -Inf
         for i in 1:n 
             if contains(S, i)
                 z[i] = LineSearch(x, h, i, n, f, l, u)
                 g[i] = f(zi)
-                fmin = min(g[i], fmin)  # updates fmin and/or fmax if needed
-                fmax = max(g[i], fmax)               
+                gmin = min(g[i], gmin)  # updates gmin and/or gmax if needed
+                gmax = max(g[i], gmax)               
             end
         end
-        RCL = IntSet() 
+        RCL = Int[]
+        threshold = ((1-alpha) * gmin + alpha * gmax)
         for i in 1:n 
-            if contains(S, i) && g[i] <= ((1-alpha) * fmin + alpha * fmax)
-                add!(RCL, i)
+            if contains(S, i) && g[i] <= threshold
+                push!(RCL, i)
             end
         end
         j = RandomlySelectElement(RCL)
