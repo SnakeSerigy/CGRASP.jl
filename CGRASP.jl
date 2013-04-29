@@ -26,6 +26,23 @@ function RandomlySelectElement(is)
     is[rand(1:length(is))]
 end
 
+function LineSearch(x, h, i, n, f, l, u)
+    xcopy = x
+    x[i] = l[i]
+    fmin = Inf
+
+    while xcopy[i] <= u[i]   # FIX: tolerance
+        fx = f(xcopy)
+        if fx < fmin
+            fmin = fx
+            xmin = xcopy[i]
+        end
+        xcopy[i] += h        
+    end
+
+    (xmin, fmin)
+end
+
 
 ### Main algorithm routines
 
@@ -38,8 +55,7 @@ function ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
         gmax = -Inf
         for i in 1:n 
             if contains(S, i)
-                z[i] = LineSearch(x, h, i, n, f, l, u)
-                g[i] = f(zi)
+                z[i], g[i] = LineSearch(x, h, i, n, f, l, u)
                 gmin = min(g[i], gmin)  # updates gmin and/or gmax if needed
                 gmax = max(g[i], gmax)               
             end
@@ -58,6 +74,7 @@ function ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
 end
 
 function LocalSearch(x, f, n, h, l, u, MaxDirToTry)
+    
 end
 
 function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alpha)
