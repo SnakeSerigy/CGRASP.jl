@@ -103,7 +103,7 @@ function LocalSearch(x, f, n, h, l, u, MaxDirToTry)
     otherDirections = [1:(3^n-1)]
     while improved
         improved = false
-        while length(D) <= NumDirToTry && (not improved)
+        while (length(D) <= NumDirToTry) && !improved
             r = GenerateRandomDirection(otherDirections)
             push!(D, r)
             d = Ternary(r)
@@ -150,4 +150,12 @@ function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alp
     end
     
     xbest
+end
+
+
+### Some test functions
+
+function easom(x)
+    fx = -1.0*cos(x[1])*cos(x[2])*exp(-1.0*(x[1] - pi)^2 - (x[2] - pi)^2)
+    return fx
 end
