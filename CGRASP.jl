@@ -43,6 +43,27 @@ function LineSearch(x, h, i, n, f, l, u)
     (xmin, fmin)
 end
 
+function Ternary(n)
+    result = Int[]
+    while n != 0
+        digit = mod(n, 3)
+        if digit == 2
+            push!(result, -1)
+        else
+            push!(result, digit)
+        end
+        n = div(n, 3)
+    end
+    result
+end
+
+function GenerateRandomDirection(directions)
+    ix = rand(1:length(directions))
+    res = directions[ix]
+    delete!(directions, ix)
+    res
+end
+
 
 ### Main algorithm routines
 
@@ -74,11 +95,36 @@ function ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
 end
 
 function LocalSearch(x, f, n, h, l, u, MaxDirToTry)
-    
+    improved = true
+    xbest = x
+    fbest = f(x)
+    NumDirToTry = min(3^n - 1, MaxDirToTry)
+    D = Int[]
+    otherDirections = [1:(3^n-1)]
+    while improved
+        improved = false
+        while length(D) <= NumDirToTry && (not improved)
+            r = GenerateRandomDirection(otherDirections)
+            push!(D, r)
+            d = Ternary(r)
+            x = xbest .+ (h * d)
+            if l <= x && x <= u
+                fx = f(x)
+                if fx < fbest
+                    xbest = x
+                    fbest = fx
+                    D = Int[]
+                    improved = true
+                end
+            end
+        end
+    end
+    xbest
 end
 
 function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alpha)
-    assert(length(l) == length(u))
+    # verifies that dimensions agree
+    @assert (length(l) == length(u)) && (length(l) == n)
 
     fbest = Inf
     for j in 1:runs
