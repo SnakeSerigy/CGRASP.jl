@@ -30,6 +30,7 @@ function LineSearch(x, h, i, n, f, l, u)
     xcopy = x
     x[i] = l[i]
     fmin = Inf
+    xmin = Inf
 
     while xcopy[i] <= u[i]   # FIX: tolerance
         fx = f(xcopy)
@@ -43,7 +44,7 @@ function LineSearch(x, h, i, n, f, l, u)
     (xmin, fmin)
 end
 
-function Ternary(n)
+function Ternary(n, dim)
     result = Int[]
     while n != 0
         digit = mod(n, 3)
@@ -54,10 +55,18 @@ function Ternary(n)
         end
         n = div(n, 3)
     end
+    
+    # fill result with zeroes up until dim
+    if length(result) < dim
+        append!(result, zeros(Int, dim - length(result)))
+    end
+
     result
 end
 
 function GenerateRandomDirection(directions)
+    @assert length(directions) > 0
+
     ix = rand(1:length(directions))
     res = directions[ix]
     delete!(directions, ix)
@@ -103,10 +112,11 @@ function LocalSearch(x, f, n, h, l, u, MaxDirToTry)
     otherDirections = [1:(3^n-1)]
     while improved
         improved = false
-        while (length(D) <= NumDirToTry) && !improved
+        while (length(D) < NumDirToTry) && !improved
             r = GenerateRandomDirection(otherDirections)
             push!(D, r)
-            d = Ternary(r)
+            d = Ternary(r, n)
+            #print(d)
             x = xbest .+ (h * d)
             if l <= x && x <= u
                 fx = f(x)
@@ -127,11 +137,14 @@ function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alp
     @assert (length(l) == length(u)) && (length(l) == n)
 
     fbest = Inf
+    xbest = Inf
     for j in 1:runs
+        print("run ${i}")
         h = 1
         x = UnifRand(l, u)
         noImprov = 0
         for iter in 1:MaxIters
+            print("iteration ${iter}")
             ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
             x = LocalSearch(x, f, n, h, l, u, MaxDirToTry)
             fx = f(x)
@@ -155,7 +168,19 @@ end
 
 ### Some test functions
 
+function easom_l(n::Int)
+    zeros(Float64, n) - 100.0
+end
+
+function easom_u(n::Int)
+    zeros(Float64, n) + 100.0
+end
+
 function easom(x)
     fx = -1.0*cos(x[1])*cos(x[2])*exp(-1.0*(x[1] - pi)^2 - (x[2] - pi)^2)
     return fx
+end
+
+function test_easom()
+    CGRASP(2, easom_l(2), easom_u(2), easom, 50000, 30, 100, 8, 0.4)
 end
