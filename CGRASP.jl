@@ -5,6 +5,14 @@
 # Andrei de A. Formiga, 2013-04-27
 #
 
+#
+# TODO
+#
+#  1. Verify copies and references of vectors between functions
+#  2. Check the grid subdivision with MaxIterNoImprov
+#
+
+
 ### Utility functions
 
 # return a vector of size n with floats uniformly distributed between l and u
@@ -97,6 +105,13 @@ function ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
                 push!(RCL, i)
             end
         end
+
+        # if no coordinates improve the solution, stop
+        # TODO: check
+        if length(RCL) == 0 
+            return 
+        end
+
         j = RandomlySelectElement(RCL)
         x[j] = z[j]
         delete!(S, j)
@@ -105,14 +120,16 @@ end
 
 function LocalSearch(x, f, n, h, l, u, MaxDirToTry)
     improved = true
-    xbest = x
+    xbest = copy(x)
     fbest = f(x)
+    fx = fbest
     NumDirToTry = min(3^n - 1, MaxDirToTry)
     D = Int[]
     otherDirections = [1:(3^n-1)]
     while improved
         improved = false
         while (length(D) < NumDirToTry) && !improved
+            #print("|D| = $(length(D))\n")
             r = GenerateRandomDirection(otherDirections)
             push!(D, r)
             d = Ternary(r, n)
@@ -121,15 +138,16 @@ function LocalSearch(x, f, n, h, l, u, MaxDirToTry)
             if l <= x && x <= u
                 fx = f(x)
                 if fx < fbest
-                    xbest = x
+                    xbest = copy(x)
                     fbest = fx
                     D = Int[]
+                    otherDirections = [1:(3^n-1)]
                     improved = true
                 end
             end
         end
     end
-    xbest
+    (xbest, fx)
 end
 
 function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alpha)
@@ -137,19 +155,17 @@ function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alp
     @assert (length(l) == length(u)) && (length(l) == n)
 
     fbest = Inf
-    xbest = Inf
+    xbest = []
     for j in 1:runs
-        print("run ${i}")
         h = 1
         x = UnifRand(l, u)
         noImprov = 0
         for iter in 1:MaxIters
-            print("iteration ${iter}")
             ConstructGreedyRandomized(x, f, n, h, l, u, alpha)
-            x = LocalSearch(x, f, n, h, l, u, MaxDirToTry)
-            fx = f(x)
+            x, fx = LocalSearch(x, f, n, h, l, u, MaxDirToTry)
             if fx < fbest
-                xbest = x
+                print("***** changed xbest, fx = $fx, fbest = $fbest \n")
+                xbest = copy(x)
                 fbest = fx
                 noImprov = 0
             else
@@ -159,6 +175,7 @@ function CGRASP(n, l, u, f, MaxIters, MaxNumIterNoImprov, runs, MaxDirToTry, alp
                 h = h / 2
                 noImprov = 0
             end
+            print("$j,$iter xb $xbest fx $fx fb $fbest $noImprov\n")
         end
     end
     
@@ -169,11 +186,11 @@ end
 ### Some test functions
 
 function easom_l(n::Int)
-    zeros(Float64, n) - 100.0
+    zeros(Float64, n) - 20.0
 end
 
 function easom_u(n::Int)
-    zeros(Float64, n) + 100.0
+    zeros(Float64, n) + 20.0
 end
 
 function easom(x)
@@ -182,5 +199,7 @@ function easom(x)
 end
 
 function test_easom()
-    CGRASP(2, easom_l(2), easom_u(2), easom, 50000, 30, 100, 8, 0.4)
+    srand(127137177)
+    #CGRASP(2, easom_l(2), easom_u(2), easom, 50000, 30, 100, 8, 0.4)
+    CGRASP(2, easom_l(2), easom_u(2), easom, 500, 30, 100, 8, 0.4)
 end
