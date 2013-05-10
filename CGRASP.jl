@@ -35,8 +35,8 @@ function RandomlySelectElement(is)
 end
 
 function LineSearch(x, h, i, n, f, l, u)
-    xcopy = x
-    x[i] = l[i]
+    xcopy = copy(x)
+    xcopy[i] = l[i]
     fmin = Inf
     xmin = Inf
 
